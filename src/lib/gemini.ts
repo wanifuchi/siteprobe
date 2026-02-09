@@ -25,37 +25,44 @@ export async function analyzeWithPersona(
   // ユーザープロンプト: スクレイピングデータ
   const userPrompt = buildUserPrompt(scrapedData);
 
-  try {
-    const result = await model.generateContent({
-      contents: [
-        { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json',
-      },
-    });
+  const MAX_RETRIES = 2;
 
-    const response = result.response;
-    const text = response.text();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await model.generateContent({
+        contents: [
+          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
+        ],
+        generationConfig: {
+          temperature: attempt === 0 ? 0.7 : 0.3, // リトライ時はtemperatureを下げる
+          maxOutputTokens: 4096,
+          responseMimeType: 'application/json',
+        },
+      });
 
-    // JSONレスポンスをパース
-    const parsed = parseJsonResponse(text);
-    if (!parsed) {
-      return { success: false, error: '分析結果のパースに失敗しました' };
-    }
+      const response = result.response;
+      const text = response.text();
 
-    return {
-      success: true,
-      result: {
-        score: clampScore(parsed.score),
-        summary: String(parsed.summary || ''),
-        findings: validateFindings(parsed.findings),
-        thinkingProcess: String(parsed.thinkingProcess || ''),
-      },
-    };
-  } catch (error: unknown) {
+      // JSONレスポンスをパース
+      const parsed = parseJsonResponse(text);
+      if (!parsed) {
+        // 最後のリトライでも失敗した場合のみエラー
+        if (attempt === MAX_RETRIES) {
+          return { success: false, error: '分析結果のパースに失敗しました' };
+        }
+        continue; // リトライ
+      }
+
+      return {
+        success: true,
+        result: {
+          score: clampScore(parsed.score),
+          summary: String(parsed.summary || ''),
+          findings: validateFindings(parsed.findings),
+          thinkingProcess: String(parsed.thinkingProcess || ''),
+        },
+      };
+    } catch (error: unknown) {
     const message = error instanceof Error ? error.message : '不明なエラー';
 
     // レート制限エラーの判定
@@ -69,7 +76,10 @@ export async function analyzeWithPersona(
     }
 
     return { success: false, error: `分析に失敗しました: ${message}` };
+    }
   }
+
+  return { success: false, error: '分析結果のパースに失敗しました（リトライ上限）' };
 }
 
 /**
@@ -159,17 +169,47 @@ function parseJsonResponse(text: string): {
   findings: Finding[];
   thinkingProcess: string;
 } | null {
+  // テキストのクリーンアップ
+  let cleaned = text.trim();
+
+  // マークダウンのコードブロックを除去 (```json ... ``` や ``` ... ```)
+  cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+
+  // 1. 直接パースを試行
   try {
-    // まず直接パースを試行
-    return JSON.parse(text);
+    return JSON.parse(cleaned);
   } catch {
-    // JSONブロックを抽出して再試行
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
+    // 2. JSON部分を抽出して再試行（最も外側の { } を探す）
+    let depth = 0;
+    let start = -1;
+    let end = -1;
+    for (let i = 0; i < cleaned.length; i++) {
+      if (cleaned[i] === '{') {
+        if (depth === 0) start = i;
+        depth++;
+      } else if (cleaned[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+
+    if (start !== -1 && end !== -1) {
+      const jsonStr = cleaned.slice(start, end + 1);
       try {
-        return JSON.parse(jsonMatch[0]);
+        return JSON.parse(jsonStr);
       } catch {
-        return null;
+        // 3. 末尾カンマなどを修正して再試行
+        const fixed = jsonStr
+          .replace(/,\s*}/g, '}')
+          .replace(/,\s*]/g, ']');
+        try {
+          return JSON.parse(fixed);
+        } catch {
+          return null;
+        }
       }
     }
     return null;
