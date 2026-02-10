@@ -1,9 +1,36 @@
 // Gemini APIクライアント
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, type Schema, SchemaType } from '@google/generative-ai';
 import type { ScrapedData, Persona, PersonaAnalyzeResponse, Finding } from '@/types';
 
 const MODEL_NAME = 'gemini-2.5-flash-lite';
+
+// Gemini APIに渡すレスポンススキーマ（JSON構造を厳密に制御）
+const RESPONSE_SCHEMA: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    score: { type: SchemaType.INTEGER, description: '0-100の評価スコア' },
+    summary: { type: SchemaType.STRING, description: '200文字以内の総合評価' },
+    findings: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          id: { type: SchemaType.STRING },
+          category: { type: SchemaType.STRING },
+          severity: { type: SchemaType.STRING, format: 'enum', enum: ['high', 'medium', 'low'] },
+          title: { type: SchemaType.STRING },
+          description: { type: SchemaType.STRING },
+          recommendation: { type: SchemaType.STRING },
+          codeExample: { type: SchemaType.STRING, description: '改善コード例（任意）', nullable: true },
+        },
+        required: ['id', 'category', 'severity', 'title', 'description', 'recommendation'],
+      },
+    },
+    thinkingProcess: { type: SchemaType.STRING, description: '分析の思考過程（400文字以内）' },
+  },
+  required: ['score', 'summary', 'findings', 'thinkingProcess'],
+};
 
 /**
  * Gemini APIを使用してペルソナ視点でサイトを分析する
@@ -25,7 +52,7 @@ export async function analyzeWithPersona(
   // ユーザープロンプト: スクレイピングデータ
   const userPrompt = buildUserPrompt(scrapedData);
 
-  const MAX_RETRIES = 2;
+  const MAX_RETRIES = 1;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -37,6 +64,7 @@ export async function analyzeWithPersona(
           temperature: attempt === 0 ? 0.7 : 0.3, // リトライ時はtemperatureを下げる
           maxOutputTokens: 4096,
           responseMimeType: 'application/json',
+          responseSchema: RESPONSE_SCHEMA,
         },
       });
 

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { analyzeWithPersona } from '@/lib/gemini';
 import type { PersonaAnalyzeRequest, PersonaAnalyzeResponse } from '@/types';
 
-export const runtime = 'edge';
+export const maxDuration = 60;
 
 // analysisPointsの最大文字数（プロンプトインジェクション対策）
 const MAX_ANALYSIS_POINTS_LENGTH = 500;
