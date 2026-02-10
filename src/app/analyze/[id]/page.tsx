@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Download, Share2 } from 'lucide-react';
+import { ArrowLeft, Download, Share2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
+import { compressAnalysis } from '@/lib/share';
+import { generateMarkdownReport, downloadTextFile } from '@/lib/export-text';
 import { AnalysisProgress } from '@/components/analysis/analysis-progress';
 import { PersonaSidebar } from '@/components/analysis/persona-sidebar';
 import { PersonaResultCard } from '@/components/analysis/persona-result-card';
@@ -90,10 +92,22 @@ export default function AnalyzePage() {
     toast.success('JSONファイルをダウンロードしました');
   };
 
+  const handleExportText = () => {
+    const markdown = generateMarkdownReport(analysis);
+    downloadTextFile(markdown, `siteprobe-${analysis.id}.md`);
+    toast.success('レポートをダウンロードしました');
+  };
+
   const handleShare = async () => {
+    const compressed = compressAnalysis(analysis);
+    if (!compressed) {
+      toast.error('共有データの生成に失敗しました');
+      return;
+    }
+    const shareUrl = `${window.location.origin}/share#data=${compressed}`;
     try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success('URLをクリップボードにコピーしました');
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('共有URLをクリップボードにコピーしました');
     } catch {
       toast.error('コピーに失敗しました');
     }
@@ -114,6 +128,10 @@ export default function AnalyzePage() {
         </div>
         {analysis.status === 'completed' && (
           <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-1" onClick={handleExportText}>
+              <FileText className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">レポート</span>
+            </Button>
             <Button variant="outline" size="sm" className="gap-1" onClick={handleExportJson}>
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">JSON</span>
