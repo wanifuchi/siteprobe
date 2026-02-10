@@ -12,6 +12,7 @@ import { AnalysisProgress } from '@/components/analysis/analysis-progress';
 import { PersonaSidebar } from '@/components/analysis/persona-sidebar';
 import { PersonaResultCard } from '@/components/analysis/persona-result-card';
 import { ScoreDashboard } from '@/components/analysis/score-dashboard';
+import { PrioritySummary } from '@/components/analysis/priority-summary';
 import { useAnalysisStore } from '@/stores/analysis-store';
 import { useHistoryStore } from '@/stores/history-store';
 import { useAnalysis } from '@/hooks/use-analysis';
@@ -177,6 +178,11 @@ export default function AnalyzePage() {
               overallScore={analysis.overallScore}
               categoryScores={analysis.categoryScores}
             />
+          )}
+
+          {/* 優先改善サマリー（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <PrioritySummary personaResults={analysis.personaResults} />
           )}
 
           {/* モバイルサイドバー（Sheet） */}
