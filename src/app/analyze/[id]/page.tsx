@@ -94,7 +94,7 @@ export default function AnalyzePage() {
 
   const handleExportText = () => {
     const markdown = generateMarkdownReport(analysis);
-    downloadTextFile(markdown, `siteprobe-${analysis.id}.md`);
+    downloadTextFile(markdown, `siteprobe-${analysis.id}.txt`);
     toast.success('レポートをダウンロードしました');
   };
 
