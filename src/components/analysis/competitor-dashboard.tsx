@@ -69,20 +69,17 @@ export function CompetitorDashboard({
       type: 'main',
     });
 
-    // 1社目（詳細分析）: mainCategoryScoresが利用可能な場合のみ
-    // 1社目は既存のペルソナ別比較結果で表示されるため、
-    // ここでは competitorQuickResults にある場合のみ追加
-    // Note: 1社目は詳細分析なのでquickResultsには含まれない
-
-    // 簡易分析結果
+    // 競合の簡易分析結果（1社目含む全競合）
     if (competitorQuickResults) {
       for (const result of competitorQuickResults) {
+        // 1社目（詳細分析も実施済み）は 'detailed' タイプ
+        const isDetailed = competitorUrl && extractDomain(result.url) === extractDomain(competitorUrl);
         list.push({
           url: result.url,
           label: extractDomain(result.url),
           overallScore: result.overallScore,
           categoryScores: result.categoryScores,
-          type: 'quick',
+          type: isDetailed ? 'detailed' : 'quick',
           strengths: result.strengths,
           weaknesses: result.weaknesses,
         });
@@ -90,7 +87,7 @@ export function CompetitorDashboard({
     }
 
     return list;
-  }, [mainUrl, mainOverallScore, mainCategoryScores, competitorQuickResults]);
+  }, [mainUrl, mainOverallScore, mainCategoryScores, competitorUrl, competitorQuickResults]);
 
   // レーダーチャート用データを構築
   const radarData = useMemo(() => {
@@ -197,18 +194,24 @@ export function CompetitorDashboard({
           </ResponsiveContainer>
         </div>
 
-        {/* 簡易分析の強み/弱み */}
-        {sites.filter((s) => s.type === 'quick' && (s.strengths?.length || s.weaknesses?.length)).length > 0 && (
+        {/* 競合の強み/弱み */}
+        {sites.filter((s) => s.type !== 'main' && (s.strengths?.length || s.weaknesses?.length)).length > 0 && (
           <div className="space-y-4">
             {sites
-              .filter((s) => s.type === 'quick')
+              .filter((s) => s.type !== 'main')
               .map((site) => (
                 <div key={site.url} className="rounded-lg border p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-sm font-medium">{site.label}</span>
-                    <Badge variant="outline" className="text-xs border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
-                      簡易分析
-                    </Badge>
+                    {site.type === 'detailed' ? (
+                      <Badge variant="outline" className="text-xs border-blue-300 text-blue-600 dark:border-blue-700 dark:text-blue-400">
+                        詳細分析
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs border-amber-300 text-amber-600 dark:border-amber-700 dark:text-amber-400">
+                        簡易分析
+                      </Badge>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* 強み */}

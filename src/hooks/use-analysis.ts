@@ -142,52 +142,75 @@ export function useAnalysis() {
 
       if (abort.signal.aborted) return;
 
-      // 3.5. 追加競合サイトの簡易分析（2-3社目）
-      if (additionalCompetitorUrls && additionalCompetitorUrls.length > 0) {
+      // 3.5. 競合サイトの簡易分析（全競合のカテゴリスコアを取得）
+      {
         const quickResults: CompetitorQuickResult[] = [];
 
-        // 追加競合の並列スクレイピング+簡易分析
-        const quickTasks = additionalCompetitorUrls.map((compUrl) =>
-          limit(async (): Promise<void> => {
-            if (abort.signal.aborted) return;
+        // 1社目: 既にスクレイピング済みなので簡易分析APIだけ実行
+        if (competitorScrapedData) {
+          try {
+            const analyzeRes = await fetch('/api/analyze/competitor-quick', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ scrapedData: competitorScrapedData }),
+              signal: abort.signal,
+            });
+            const analyzeData: CompetitorQuickResponse = await analyzeRes.json();
 
-            try {
-              // スクレイピング
-              const scrapeRes = await fetch('/api/scrape', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: compUrl }),
-                signal: abort.signal,
-              });
-              const scrapeData: ScrapeResponse = await scrapeRes.json();
-
-              if (!scrapeData.success || !scrapeData.data) {
-                toast.warning(`競合サイト（${compUrl}）の取得に失敗しました`);
-                return;
-              }
-
-              // 簡易分析
-              const analyzeRes = await fetch('/api/analyze/competitor-quick', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ scrapedData: scrapeData.data }),
-                signal: abort.signal,
-              });
-              const analyzeData: CompetitorQuickResponse = await analyzeRes.json();
-
-              if (analyzeData.success && analyzeData.result) {
-                quickResults.push(analyzeData.result);
-              } else {
-                toast.warning(`競合サイト（${compUrl}）の簡易分析に失敗しました`);
-              }
-            } catch (error: unknown) {
-              if (abort.signal.aborted) return;
-              toast.warning(`競合サイト（${compUrl}）の分析に失敗しました`);
+            if (analyzeData.success && analyzeData.result) {
+              quickResults.push(analyzeData.result);
             }
-          })
-        );
+          } catch {
+            // 1社目の簡易分析失敗は無視（詳細分析は完了済み）
+          }
+        }
 
-        await Promise.allSettled(quickTasks);
+        if (abort.signal.aborted) return;
+
+        // 2-3社目: スクレイピング+簡易分析
+        if (additionalCompetitorUrls && additionalCompetitorUrls.length > 0) {
+          const quickTasks = additionalCompetitorUrls.map((compUrl) =>
+            limit(async (): Promise<void> => {
+              if (abort.signal.aborted) return;
+
+              try {
+                // スクレイピング
+                const scrapeRes = await fetch('/api/scrape', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ url: compUrl }),
+                  signal: abort.signal,
+                });
+                const scrapeData: ScrapeResponse = await scrapeRes.json();
+
+                if (!scrapeData.success || !scrapeData.data) {
+                  toast.warning(`競合サイト（${compUrl}）の取得に失敗しました`);
+                  return;
+                }
+
+                // 簡易分析
+                const analyzeRes = await fetch('/api/analyze/competitor-quick', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ scrapedData: scrapeData.data }),
+                  signal: abort.signal,
+                });
+                const analyzeData: CompetitorQuickResponse = await analyzeRes.json();
+
+                if (analyzeData.success && analyzeData.result) {
+                  quickResults.push(analyzeData.result);
+                } else {
+                  toast.warning(`競合サイト（${compUrl}）の簡易分析に失敗しました`);
+                }
+              } catch (error: unknown) {
+                if (abort.signal.aborted) return;
+                toast.warning(`競合サイト（${compUrl}）の分析に失敗しました`);
+              }
+            })
+          );
+
+          await Promise.allSettled(quickTasks);
+        }
 
         if (abort.signal.aborted) return;
 
