@@ -2,7 +2,7 @@
 
 // レート制限の設定
 const WINDOW_MS = 60 * 1000; // 1分間
-const MAX_REQUESTS = 10; // ウィンドウあたりの最大リクエスト数
+const MAX_REQUESTS = 20; // ウィンドウあたりの最大リクエスト数
 
 interface RateLimitEntry {
   count: number;

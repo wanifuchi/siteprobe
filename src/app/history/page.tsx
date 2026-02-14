@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Trash2, ExternalLink, Clock } from 'lucide-react';
+import { Trash2, ExternalLink, Clock, GitCompareArrows } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +74,17 @@ export default function HistoryPage() {
                   {/* 情報 */}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{item.url}</p>
+                    {item.competitorUrl && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <GitCompareArrows className="h-3 w-3 text-blue-500 shrink-0" />
+                        <span className="text-xs text-muted-foreground truncate">
+                          vs {item.competitorUrl}
+                          {item.competitorUrls && item.competitorUrls.length > 1 && (
+                            <> 他{item.competitorUrls.length - 1}サイト</>
+                          )}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-muted-foreground">
                         {new Date(item.createdAt).toLocaleString('ja-JP')}

@@ -7,6 +7,7 @@ import {
   CategoryScore,
   Persona,
   ScrapedData,
+  CompetitorQuickResult,
 } from '@/types';
 import { CATEGORY_CONFIG } from '@/data/default-personas';
 
@@ -48,7 +49,7 @@ export const useAnalysisStore = create<AnalysisState>()((set, get) => ({
   currentAnalysis: null,
 
   // 分析を開始（AnalysisResult を初期化）
-  startAnalysis: (url: string, personas: Persona[]) => {
+  startAnalysis: (url: string, personas: Persona[], competitorUrl?: string) => {
     const analysisId = `analysis-${Date.now()}`;
     const personaResults: PersonaResult[] = personas.map((p) => ({
       personaId: p.id,
@@ -72,6 +73,8 @@ export const useAnalysisStore = create<AnalysisState>()((set, get) => ({
       overallScore: 0,
       categoryScores: [],
       elapsedTime: 0,
+      competitorUrl,
+      competitorScrapedData: competitorUrl ? null : undefined,
     };
 
     set({ status: 'preparing', currentAnalysis: analysis });
@@ -126,6 +129,42 @@ export const useAnalysisStore = create<AnalysisState>()((set, get) => ({
         currentAnalysis: {
           ...state.currentAnalysis,
           scrapedData: data,
+        },
+      };
+    }),
+
+  // 競合サイトのスクレイピングデータをセット
+  setCompetitorScrapedData: (data: ScrapedData) =>
+    set((state) => {
+      if (!state.currentAnalysis) return state;
+      return {
+        currentAnalysis: {
+          ...state.currentAnalysis,
+          competitorScrapedData: data,
+        },
+      };
+    }),
+
+  // 複数競合URL一覧をセット
+  setCompetitorUrls: (urls: string[]) =>
+    set((state) => {
+      if (!state.currentAnalysis) return state;
+      return {
+        currentAnalysis: {
+          ...state.currentAnalysis,
+          competitorUrls: urls,
+        },
+      };
+    }),
+
+  // 競合簡易分析結果をセット
+  setCompetitorQuickResults: (results: CompetitorQuickResult[]) =>
+    set((state) => {
+      if (!state.currentAnalysis) return state;
+      return {
+        currentAnalysis: {
+          ...state.currentAnalysis,
+          competitorQuickResults: results,
         },
       };
     }),

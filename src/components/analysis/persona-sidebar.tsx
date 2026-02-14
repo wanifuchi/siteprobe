@@ -74,7 +74,7 @@ export function PersonaSidebar({ personaResults, selectedId, onSelect }: Persona
                       <span className="truncate flex-1">{r.personaName}</span>
                       {scoreLabel && (
                         <span
-                          className="text-xs font-medium shrink-0"
+                          className="shrink-0 min-w-[2.5rem] text-right text-sm font-semibold tabular-nums"
                           style={{ color: scoreLabel.color }}
                         >
                           {r.score}

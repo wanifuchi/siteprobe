@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Download, Share2, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Share2, FileText, GitCompareArrows } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { toast } from 'sonner';
@@ -13,6 +13,9 @@ import { PersonaSidebar } from '@/components/analysis/persona-sidebar';
 import { PersonaResultCard } from '@/components/analysis/persona-result-card';
 import { ScoreDashboard } from '@/components/analysis/score-dashboard';
 import { PrioritySummary } from '@/components/analysis/priority-summary';
+import { RoadmapView } from '@/components/analysis/roadmap-view';
+import { TrendChart } from '@/components/analysis/trend-chart';
+import { CompetitorDashboard } from '@/components/analysis/competitor-dashboard';
 import { useAnalysisStore } from '@/stores/analysis-store';
 import { useHistoryStore } from '@/stores/history-store';
 import { useAnalysis } from '@/hooks/use-analysis';
@@ -27,7 +30,7 @@ export default function AnalyzePage() {
   const currentAnalysis = useAnalysisStore((s) => s.currentAnalysis);
   const status = useAnalysisStore((s) => s.status);
   const getAnalysisDetail = useHistoryStore((s) => s.getAnalysisDetail);
-  const { cancelAnalysis } = useAnalysis();
+  const { cancelAnalysis, retryPersona } = useAnalysis();
   const { elapsedMs, start, stop } = useElapsedTime();
 
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
@@ -122,7 +125,12 @@ export default function AnalyzePage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-sm font-medium truncate">{analysis.url}</h1>
+          <h1 className="text-sm font-medium truncate">
+            {analysis.url}
+            {analysis.competitorUrl && (
+              <span className="text-muted-foreground font-normal"> vs {analysis.competitorUrl}</span>
+            )}
+          </h1>
           <p className="text-xs text-muted-foreground">
             {new Date(analysis.createdAt).toLocaleString('ja-JP')}
           </p>
@@ -160,7 +168,7 @@ export default function AnalyzePage() {
       {/* メインコンテンツ */}
       <div className="flex">
         {/* デスクトップサイドバー */}
-        <aside className="hidden lg:block w-64 shrink-0 border-r">
+        <aside className="hidden lg:block w-80 shrink-0 border-r">
           <div className="sticky top-14 h-[calc(100vh-3.5rem)]">
             <PersonaSidebar
               personaResults={analysis.personaResults}
@@ -172,6 +180,22 @@ export default function AnalyzePage() {
 
         {/* メインエリア */}
         <div className="flex-1 min-w-0 p-4 space-y-6">
+          {/* 競合比較バナー */}
+          {analysis.competitorUrl && (
+            <div className="flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-2.5">
+              <GitCompareArrows className="h-4 w-4 text-blue-500 shrink-0" />
+              <div className="text-sm min-w-0">
+                <span className="text-muted-foreground">比較対象: </span>
+                <span className="font-medium truncate">{analysis.competitorUrl}</span>
+                {analysis.competitorUrls && analysis.competitorUrls.length > 1 && (
+                  <span className="text-muted-foreground">
+                    {' '}他{analysis.competitorUrls.length - 1}サイト
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* スコアダッシュボード */}
           {(analysis.status === 'completed' || analysis.overallScore > 0) && (
             <ScoreDashboard
@@ -180,9 +204,33 @@ export default function AnalyzePage() {
             />
           )}
 
+          {/* 競合比較ダッシュボード（簡易分析結果がある場合） */}
+          {analysis.status === 'completed' && analysis.competitorQuickResults && analysis.competitorQuickResults.length > 0 && (
+            <CompetitorDashboard
+              mainUrl={analysis.url}
+              mainOverallScore={analysis.overallScore}
+              mainCategoryScores={analysis.categoryScores}
+              competitorUrl={analysis.competitorUrl}
+              competitorQuickResults={analysis.competitorQuickResults}
+            />
+          )}
+
+          {/* スコア推移（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <TrendChart url={analysis.url} />
+          )}
+
           {/* 優先改善サマリー（分析完了時） */}
           {analysis.status === 'completed' && (
             <PrioritySummary personaResults={analysis.personaResults} />
+          )}
+
+          {/* 改善ロードマップ（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <RoadmapView
+              personaResults={analysis.personaResults}
+              overallScore={analysis.overallScore}
+            />
           )}
 
           {/* モバイルサイドバー（Sheet） */}
@@ -207,7 +255,13 @@ export default function AnalyzePage() {
 
           {/* 選択されたペルソナの結果 */}
           {selectedResult ? (
-            <PersonaResultCard result={selectedResult} />
+            <PersonaResultCard
+              result={selectedResult}
+              analysisId={analysis.id}
+              analysisUrl={analysis.url}
+              competitorUrl={analysis.competitorUrl}
+              onRetry={id === 'current' ? retryPersona : undefined}
+            />
           ) : (
             <div className="flex h-40 items-center justify-center rounded-lg border border-dashed">
               <p className="text-sm text-muted-foreground">

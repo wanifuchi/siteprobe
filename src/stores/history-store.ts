@@ -18,6 +18,8 @@ function toHistoryItem(result: AnalysisResult): AnalysisHistoryItem {
     completedPersonaCount: result.personaResults.filter(
       (r) => r.status === 'completed'
     ).length,
+    ...(result.competitorUrl ? { competitorUrl: result.competitorUrl } : {}),
+    ...(result.competitorUrls && result.competitorUrls.length > 0 ? { competitorUrls: result.competitorUrls } : {}),
   };
 }
 

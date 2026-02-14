@@ -45,14 +45,14 @@ export default function HomePage() {
   const status = useAnalysisStore((s) => s.status);
   const { runAnalysis } = useAnalysis();
 
-  const handleSubmit = async (url: string) => {
+  const handleSubmit = async (url: string, competitorUrl?: string, additionalCompetitorUrls?: string[]) => {
     const personas = getEnabledPersonas();
     if (personas.length === 0) {
       return;
     }
     // 分析ページに遷移してから分析開始
     router.push('/analyze/current');
-    await runAnalysis(url, personas);
+    await runAnalysis(url, personas, competitorUrl, additionalCompetitorUrls);
   };
 
   const isLoading = status === 'preparing' || status === 'analyzing';

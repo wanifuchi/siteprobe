@@ -1,7 +1,7 @@
 // ペルソナ分析API: POST /api/analyze/persona
 
 import { NextRequest, NextResponse } from 'next/server';
-import { analyzeWithPersona } from '@/lib/gemini';
+import { analyzeWithPersona, analyzeWithPersonaAndCompetitor } from '@/lib/gemini';
 import type { PersonaAnalyzeRequest, PersonaAnalyzeResponse } from '@/types';
 
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<PersonaAn
     );
   }
 
-  const { scrapedData, persona } = body;
+  const { scrapedData, persona, competitorScrapedData } = body;
 
   // バリデーション: scrapedData
   if (!scrapedData || !scrapedData.url || !scrapedData.title === undefined) {
@@ -47,9 +47,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<PersonaAn
     );
   }
 
-  // Gemini API呼び出し
+  // Gemini API呼び出し（競合データがある場合は比較分析）
   try {
-    const result = await analyzeWithPersona(scrapedData, persona);
+    const result = competitorScrapedData?.url
+      ? await analyzeWithPersonaAndCompetitor(scrapedData, persona, competitorScrapedData)
+      : await analyzeWithPersona(scrapedData, persona);
+
     if (!result.success) {
       return NextResponse.json(result, { status: 502 });
     }

@@ -21,6 +21,15 @@ export function generateMarkdownReport(analysis: AnalysisResult): string {
   lines.push('# SiteProbe 分析レポート');
   lines.push('');
   lines.push(`- **URL**: ${analysis.url}`);
+  if (analysis.competitorUrl) {
+    lines.push(`- **競合URL（詳細分析）**: ${analysis.competitorUrl}`);
+  }
+  if (analysis.competitorUrls && analysis.competitorUrls.length > 1) {
+    const additionalUrls = analysis.competitorUrls.slice(1);
+    for (const url of additionalUrls) {
+      lines.push(`- **競合URL（簡易分析）**: ${url}`);
+    }
+  }
   lines.push(`- **分析日**: ${date}`);
   lines.push(`- **総合スコア**: ${analysis.overallScore}/100（${scoreLabel.label}）`);
   lines.push('');
@@ -82,6 +91,37 @@ export function generateMarkdownReport(analysis: AnalysisResult): string {
         }
       }
 
+      if (persona.competitorComparison) {
+        const comp = persona.competitorComparison;
+        lines.push('#### 競合比較');
+        lines.push('');
+        if (comp.overallAssessment) {
+          lines.push(comp.overallAssessment);
+          lines.push('');
+        }
+        if (comp.mainSiteAdvantages.length > 0) {
+          lines.push('**自サイトが優れている点:**');
+          for (const item of comp.mainSiteAdvantages) {
+            lines.push(`- ${item}`);
+          }
+          lines.push('');
+        }
+        if (comp.competitorAdvantages.length > 0) {
+          lines.push('**競合が優れている点:**');
+          for (const item of comp.competitorAdvantages) {
+            lines.push(`- ${item}`);
+          }
+          lines.push('');
+        }
+        if (comp.suggestions.length > 0) {
+          lines.push('**競合から学べる改善案:**');
+          for (const item of comp.suggestions) {
+            lines.push(`- ${item}`);
+          }
+          lines.push('');
+        }
+      }
+
       if (persona.thinkingProcess) {
         lines.push('<details>');
         lines.push('<summary>分析の思考過程</summary>');
@@ -89,6 +129,38 @@ export function generateMarkdownReport(analysis: AnalysisResult): string {
         lines.push(persona.thinkingProcess);
         lines.push('');
         lines.push('</details>');
+        lines.push('');
+      }
+    }
+  }
+
+  // 競合簡易分析結果
+  if (analysis.competitorQuickResults && analysis.competitorQuickResults.length > 0) {
+    lines.push('---');
+    lines.push('');
+    lines.push('## 競合サイト簡易分析');
+    lines.push('');
+    for (const comp of analysis.competitorQuickResults) {
+      lines.push(`### ${comp.url}（総合: ${comp.overallScore}点）`);
+      lines.push('');
+      lines.push('| カテゴリ | スコア |');
+      lines.push('|----------|--------|');
+      for (const cs of comp.categoryScores) {
+        lines.push(`| ${cs.label} | ${cs.score}点 |`);
+      }
+      lines.push('');
+      if (comp.strengths.length > 0) {
+        lines.push('**強み:**');
+        for (const s of comp.strengths) {
+          lines.push(`- ${s}`);
+        }
+        lines.push('');
+      }
+      if (comp.weaknesses.length > 0) {
+        lines.push('**弱み:**');
+        for (const w of comp.weaknesses) {
+          lines.push(`- ${w}`);
+        }
         lines.push('');
       }
     }
