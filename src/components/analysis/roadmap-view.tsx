@@ -22,7 +22,7 @@ const EFFORT_CONFIG = {
 const PHASE_ICONS = [Zap, Calendar, Target];
 
 export function RoadmapView({ personaResults, overallScore }: RoadmapViewProps) {
-  const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set([1]));
+  const [expandedPhases, setExpandedPhases] = useState<Set<number>>(new Set());
 
   // 全ペルソナのFindingsを統合してロードマップを構築
   const roadmap = useMemo(() => {

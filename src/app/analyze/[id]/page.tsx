@@ -181,17 +181,17 @@ export default function AnalyzePage() {
         {/* メインエリア */}
         <div className="flex-1 min-w-0 p-4 space-y-6">
           {/* 競合比較バナー */}
-          {analysis.competitorUrl && (
+          {analysis.competitorUrls && analysis.competitorUrls.length > 0 && (
             <div className="flex items-center gap-2 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 px-4 py-2.5">
               <GitCompareArrows className="h-4 w-4 text-blue-500 shrink-0" />
               <div className="text-sm min-w-0">
                 <span className="text-muted-foreground">比較対象: </span>
-                <span className="font-medium truncate">{analysis.competitorUrl}</span>
-                {analysis.competitorUrls && analysis.competitorUrls.length > 1 && (
-                  <span className="text-muted-foreground">
-                    {' '}他{analysis.competitorUrls.length - 1}サイト
+                {analysis.competitorUrls.map((url, i) => (
+                  <span key={url}>
+                    {i > 0 && <span className="text-muted-foreground">{' / '}</span>}
+                    <span className="font-medium">{url}</span>
                   </span>
-                )}
+                ))}
               </div>
             </div>
           )}
