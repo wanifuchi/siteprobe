@@ -204,7 +204,20 @@ export default function AnalyzePage() {
             />
           )}
 
-          {/* 競合比較ダッシュボード（簡易分析結果がある場合） */}
+          {/* 優先改善サマリー（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <PrioritySummary personaResults={analysis.personaResults} />
+          )}
+
+          {/* 改善ロードマップ（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <RoadmapView
+              personaResults={analysis.personaResults}
+              overallScore={analysis.overallScore}
+            />
+          )}
+
+          {/* 競合比較ダッシュボード */}
           {analysis.status === 'completed' && analysis.competitorQuickResults && analysis.competitorQuickResults.length > 0 && (
             <CompetitorDashboard
               mainUrl={analysis.url}
@@ -218,19 +231,6 @@ export default function AnalyzePage() {
           {/* スコア推移（分析完了時） */}
           {analysis.status === 'completed' && (
             <TrendChart url={analysis.url} />
-          )}
-
-          {/* 優先改善サマリー（分析完了時） */}
-          {analysis.status === 'completed' && (
-            <PrioritySummary personaResults={analysis.personaResults} />
-          )}
-
-          {/* 改善ロードマップ（分析完了時） */}
-          {analysis.status === 'completed' && (
-            <RoadmapView
-              personaResults={analysis.personaResults}
-              overallScore={analysis.overallScore}
-            />
           )}
 
           {/* モバイルサイドバー（Sheet） */}
