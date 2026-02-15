@@ -217,22 +217,6 @@ export default function AnalyzePage() {
             />
           )}
 
-          {/* 競合比較ダッシュボード */}
-          {analysis.status === 'completed' && analysis.competitorQuickResults && analysis.competitorQuickResults.length > 0 && (
-            <CompetitorDashboard
-              mainUrl={analysis.url}
-              mainOverallScore={analysis.overallScore}
-              mainCategoryScores={analysis.categoryScores}
-              competitorUrl={analysis.competitorUrl}
-              competitorQuickResults={analysis.competitorQuickResults}
-            />
-          )}
-
-          {/* スコア推移（分析完了時） */}
-          {analysis.status === 'completed' && (
-            <TrendChart url={analysis.url} />
-          )}
-
           {/* モバイルサイドバー（Sheet） */}
           <div className="lg:hidden">
             <Sheet>
@@ -270,6 +254,22 @@ export default function AnalyzePage() {
                   : '左のサイドバーからペルソナを選択してください'}
               </p>
             </div>
+          )}
+
+          {/* 競合比較ダッシュボード */}
+          {analysis.status === 'completed' && analysis.competitorQuickResults && analysis.competitorQuickResults.length > 0 && (
+            <CompetitorDashboard
+              mainUrl={analysis.url}
+              mainOverallScore={analysis.overallScore}
+              mainCategoryScores={analysis.categoryScores}
+              competitorUrl={analysis.competitorUrl}
+              competitorQuickResults={analysis.competitorQuickResults}
+            />
+          )}
+
+          {/* スコア推移（分析完了時） */}
+          {analysis.status === 'completed' && (
+            <TrendChart url={analysis.url} />
           )}
         </div>
       </div>
